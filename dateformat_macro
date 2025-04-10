@@ -1,0 +1,30 @@
+Sub FormatDateColumnsInAllTables()
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim col As ListColumn
+    Dim headerText As String
+    Dim cell As Range
+    
+    ' Loop through all worksheets in the active workbook.
+    For Each ws In ThisWorkbook.Worksheets
+        ' Loop through each table (ListObject) on the current worksheet.
+        For Each tbl In ws.ListObjects
+            ' Loop through each column in the table.
+            For Each col In tbl.ListColumns
+                headerText = col.Header ' Get header text from the table column.
+                ' Check if the header contains "date" (case-insensitive).
+                If InStr(1, headerText, "date", vbTextCompare) > 0 Then
+                    ' Format the data area of the column to "mm/dd/yyyy".
+                    col.DataBodyRange.NumberFormat = "mm/dd/yyyy"
+                    
+                    ' Optional: Try to force a conversion to date for each cell.
+                    For Each cell In col.DataBodyRange
+                        On Error Resume Next  ' In case any value cannot be converted.
+                        cell.Value = CDate(cell.Value)
+                        On Error GoTo 0
+                    Next cell
+                End If
+            Next col
+        Next tbl
+    Next ws
+End Sub
