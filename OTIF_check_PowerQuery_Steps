@@ -1,0 +1,139 @@
+Below is a detailed, step‐by‐step approach that leverages Excel’s Power Query—which is both scalable and flexible—to match and later analyze your delivery records. This method lets you keep your data in Excel while automating many of the data cleaning, merging, and updating steps. Comments at each step explain not only what you do but also why it’s important for long-term, scalable reporting on your OTIF KPI.
+
+---
+
+## Step 1: Review and Standardize Your Data
+
+**What You Do:**
+- **Identify Key Fields:**  
+  Determine which fields uniquely define each delivery record. For example, you might have fields such as Order ID, Line Number, and Product Code. These will form the basis of your composite key.
+
+- **Clean Up Your Data:**  
+  Ensure that text fields have consistent formatting (using Excel’s TRIM, UPPER/LOWER functions, etc.) and that dates and numerical values are in the correct format.  
+  *Example:* In a new column, use  
+  ```excel
+  =TRIM(A2)
+  ```  
+  to remove extra spaces from Order IDs.
+
+**Why It Matters:**  
+Standardization prevents mismatches caused by formatting differences and ensures that when you combine data from different customers, the records align correctly.
+
+---
+
+## Step 2: Convert Source Data to Excel Tables
+
+**What You Do:**
+- **Turn Each Data Range into a Table:**  
+  Select your data range and press **Ctrl+T** to convert it into an Excel Table. Name each table logically (e.g., "InternalDeliveryData" and "CustomerDeliveryData").
+
+**Why It Matters:**  
+Excel Tables are dynamic—they automatically expand when you add new rows. This is a critical feature for scalability because it means your Power Query queries will reference the entire table and update when new customer files arrive.
+
+---
+
+## Step 3: Create a Composite Key Column
+
+**What You Do:**
+- **In Each Table, Add a New Column for the Composite Key:**  
+  For instance, if you’re combining Order ID, Line Number, and Product Code, add a column named “CompositeKey” with a formula like:  
+  ```excel
+  =TRIM([@OrderID]) & "-" & TRIM([@LineNumber]) & "-" & TRIM([@ProductCode])
+  ```
+  This formula concatenates the selected fields, separated by hyphens.
+
+**Why It Matters:**  
+A composite key ensures you have a unique, consistent identifier across both your internal and customer datasets. This is crucial for accurately matching corresponding delivery lines.
+
+---
+
+## Step 4: Load Your Tables into Power Query
+
+**What You Do:**
+- **Import the Tables into Power Query:**  
+  On the **Data** tab, click on **From Table/Range** to load each table into Power Query.  
+- **Verify Data Types:**  
+  Once inside Power Query, ensure that your columns (dates, numbers, text) have the correct data types.
+  
+**Why It Matters:**  
+Power Query is designed to automate data transformations. Loading your tables here means every transformation—cleaning, merging, and adding the composite key—will be recorded in a step-by-step process that you can refresh whenever the underlying data changes.
+
+---
+
+## Step 5: Merge the Data Based on the Composite Key
+
+**What You Do:**
+- **Open Power Query and Use the Merge Function:**  
+  In Power Query, use the **Merge Queries** feature to join your internal delivery table with the customer delivery table by matching the “CompositeKey” column in both.
+  - Choose the type of join (for example, Inner Join to get only the matching records).
+  
+- **Expand the Merged Columns:**  
+  After merging, use the expand button to select which fields from the customer data you wish to add to your matched dataset.
+
+**Why It Matters:**  
+This join creates a combined view of the delivery records from both systems. Any mismatches or missing values become immediately apparent, which you can then further analyze to understand differences in reporting.
+
+---
+
+## Step 6: Prepare the Matched Data for Analysis
+
+**What You Do:**
+- **Create Calculated Columns:**  
+  In Power Query, add calculated columns to compute differences between key dates (requested vs. actual) and quantities (delivered vs. received). For example, you could create a column that flags whether the delivery is "On Time" and "In Full".
+  
+- **Load the Final Data into Excel:**  
+  Once you’re satisfied with the merged and calculated data, close and load it back into Excel as a new table.
+
+**Why It Matters:**  
+By preparing the data with all necessary calculations upfront, you set a solid foundation for later analytical steps (such as building dashboards, performing trend analysis, or running pivot table reports) to standardize the reporting on your OTIF KPI.
+
+---
+
+## Step 7: Scalability – Adding More Customer Data
+
+**What You Do:**
+- **Configure the Power Query to Handle New Data:**  
+  - **For a New Customer:** If the file structure is identical, simply add the new customer’s data to the designated table or (better yet) maintain a folder with all the customer files. Power Query can be configured to import all files from a folder.
+  - **Refreshing the Query:** Once new data is added, open the Excel workbook and hit **Refresh All** to automatically update your merged dataset.
+  
+- **Adjust If Needed:**  
+  If new customers use slightly different data formats, you may need to add a minor transformation step in Power Query. However, because you’ve documented each step in Power Query, these adjustments will be quick.
+
+**Why It Matters:**  
+This process minimizes manual intervention. Each new data set (or file) is automatically processed using the pre-defined steps, ensuring that your solution scales smoothly as more customer data becomes available.
+
+---
+
+## Step 8: Analysis and Reporting
+
+**What You Do:**
+- **Build Dashboards and Pivot Tables:**  
+  Use the matched data table to create pivot tables, charts, and dashboards. Analyze:
+  - Trends for on-time and in-full deliveries across different customers.
+  - Variances in reported figures that could explain discrepancies.
+  
+- **Document Observations:**  
+  Keep notes on any systemic differences (e.g., specific customers or plants with greater variances) and investigate further as needed.
+  
+- **Create a Feedback Loop:**  
+  As discrepancies emerge, collaborate with both internal teams and customers to understand the root causes, then adjust data collection or transformation processes accordingly.
+
+**Why It Matters:**  
+The ultimate goal is to understand and standardize the OTIF reporting. Rigorous analysis, enabled by your scalable Power Query solution, will provide insights into how discrepancies arise—allowing you to propose process improvements that benefit all stakeholders.
+
+---
+
+## Should You Use Excel or Something Else?
+
+For the current scope and dataset:
+- **Excel (with Power Query)** is an excellent choice. It offers enough power for cleaning, merging, and analyzing your data, and is scalable for periodic updates.
+- **Future Considerations:**  
+  If your datasets grow significantly in size or complexity, or if you need more advanced analytics/visualizations:
+  - **Power BI** (which integrates with Power Query) can provide richer dashboards and better handling of larger datasets.
+  - **Dedicated Database Systems** (like SQL Server) and **Python/R** for deeper data analysis might be warranted.
+
+For now, Excel with Power Query strikes a good balance between ease-of-use, automation, and scalability—especially since you already have your data in Excel.
+
+---
+
+By following these steps and leveraging the strengths of Power Query, you’ll set up a repeatable, scalable process to merge delivery lines from your system and customer systems. This approach not only simplifies the matching process but also paves the way for rich analysis and improvements in how the OTIF KPI is reported and standardized.
