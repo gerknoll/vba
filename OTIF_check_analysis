@@ -1,0 +1,95 @@
+Below is a step‐by‐step guide to create an interactive summary sheet in Excel that shows, for each plant and customer combination, how the requested delivery date compares with the actual delivery date—and you can extend this to quantity differences as well.
+
+⸻
+
+Step 1: Ensure Your Data Has the Necessary Fields
+
+Make sure your joined data includes at least these columns (or their equivalents):
+	•	Plant – which plant provided the delivery.
+	•	Customer – customer who recorded the delivery.
+	•	Requested Delivery Date – when the delivery was scheduled.
+	•	Actual (Recorded) Delivery Date – when the delivery was logged by the customer.
+	•	Delivered Quantity – quantity as reported by your system.
+	•	Received Quantity – quantity as recorded by the customer.
+
+⸻
+
+Step 2: Add Calculated Columns for Differences
+
+You need a couple of helper columns that calculate the difference between dates and quantities:
+	1.	Date Difference:
+In a new column (for example, “Date Diff”), enter a formula that subtracts the requested date from the actual date. Assuming:
+	•	Requested date is in cell C2
+	•	Actual date is in cell D2
+In cell G2 (or any free column), you could write:
+
+=D2 - C2
+
+This returns the difference in days (for example, a value of 1 means the actual date is one day later than the requested date). Format this column as a Number.
+
+	2.	Quantity Difference:
+Similarly, in another column (say “Qty Diff”), subtract the delivered quantity from the received quantity. For example, if:
+	•	Delivered quantity is in cell E2
+	•	Received quantity is in cell F2
+In cell H2, enter:
+
+=F2 - E2
+
+This will show whether there was a shortfall or an excess in quantity.
+
+	3.	Drag the Formulas Down:
+Make sure these formulas are applied to every row in your table. If your data is set up as an Excel Table (using Ctrl+T), these calculated columns will auto-fill for every new row.
+
+⸻
+
+Step 3: Create a Pivot Table for Analysis
+
+A pivot table is an excellent tool to summarize the information by plant and customer.
+	1.	Insert a Pivot Table:
+	•	Click anywhere inside your data range (or Excel Table).
+	•	Go to the Insert tab and select PivotTable.
+	•	Choose where to place the PivotTable (a new sheet is usually a good idea).
+	2.	Set Up the Pivot Table Fields:
+	•	Rows: Drag the Plant field to the Rows area.
+	•	Columns: Drag the Customer field to the Columns area.
+	•	Values:
+To see the average difference in dates:
+	•	Drag the Date Diff field to the Values area. It will default to a sum or count—click on the field, choose Value Field Settings, and select Average (or Max/Min if that better suits your needs).
+To analyze quantities:
+	•	Drag the Qty Diff field to the Values area and set it up similarly.
+Optionally, you can add the raw count of deliveries by dragging any field (such as Order ID) to see the number of records in each plant-customer combination.
+	3.	Customize the Presentation:
+	•	Field Formatting: Right-click on the pivot table values, choose Number Format, and format the Date Difference field to show numbers (or even a custom format if needed).
+	•	Slicers: To add interactive filtering, you can insert slicers for Plant, Customer, or any other field by going to PivotTable Analyze > Insert Slicer.
+
+⸻
+
+Step 4: Create a Manager-Friendly Report Sheet
+	1.	Build a Dashboard Layout:
+	•	On a new worksheet, reserve a section for your pivot table. You can place multiple pivot tables or charts to show different aspects (date differences, quantity differences, etc.).
+	•	Add titles, headers, and any context notes so your manager can understand the information at a glance.
+	2.	Use Conditional Formatting (Optional):
+	•	For added clarity, apply conditional formatting to the pivot table cells. For example, format cells with a date difference greater than 0 (or less than 0) using a distinct color to quickly highlight delays or early deliveries.
+	•	This helps visually flag which plant-customer pairs are experiencing significant deviations.
+	3.	Refresh and Update:
+	•	With your data set up as Excel Tables and the pivot table linked to these tables, whenever you add new rows (or new customer data), simply click Refresh All on the Data tab to update the pivot table results.
+
+⸻
+
+Step 5: Analyze and Draw Conclusions
+
+Once the dashboard is built:
+	•	Look for trends—for instance, if Plant A consistently shows a 1-day delay for Customer B.
+	•	Compare discrepancies in both dates and quantities side-by-side to identify potential process issues.
+	•	Use filters or slicers to drill down by time period, product type, or other relevant dimensions for deeper insights.
+
+⸻
+
+Summary
+	1.	Prepare Your Data: Ensure all necessary fields (plants, customers, dates, quantities) are included and clean.
+	2.	Calculate Differences: Add columns for day differences and quantity differences.
+	3.	Create a Pivot Table: Summarize the average differences by plant and customer.
+	4.	Build a Report/Dashboard Sheet: Arrange the pivot table with slicers and conditional formatting to make key insights easy to spot.
+	5.	Refresh as Needed: With Excel Tables and pivot tables, your analysis remains scalable as new data is added.
+
+This setup allows your manager to see, for example, that for Plant A delivering to Customer B, the delivery dates differ by 1 day on average, and to quickly drill down into any additional details needed for further analysis of the OTIF KPI.
