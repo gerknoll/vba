@@ -1,0 +1,98 @@
+Below is a detailed, step‐by‐step guide using Power Query in Excel to join your main internal data table with three additional tables for OTIF analysis. This will not only combine your data for comparison but also set up a process that refreshes automatically when new data is added.
+
+⸻
+
+Step 1: Prepare Your Data in Excel
+	1.	Convert Each Data Range to an Excel Table:
+	•	Open your workbook and select your internal data range.
+	•	Go to Insert > Table (or press Ctrl+T). In the Create Table dialog, ensure the “My table has headers” option is checked, then click OK.
+	•	Repeat this for the other three datasets.
+	•	Tip: Name your tables (e.g., “InternalData”, “CustomerData1”, “CustomerData2”, “CustomerData3”) by selecting the table, going to the Table Design tab, and setting the Table Name.
+	2.	Ensure Consistency Across Tables:
+	•	Make sure that any key fields (like Order ID, Plant, Customer, or any other identifier) are in the same format.
+	•	If necessary, create a composite key in each table (as we’ve discussed before) using a calculated column in Power Query or directly in Excel.
+
+⸻
+
+Step 2: Load the Tables into Power Query
+	1.	Load Each Table:
+	•	Click on any cell inside your “InternalData” table.
+	•	Go to Data > From Table/Range. This opens the Power Query Editor with your InternalData loaded.
+	•	Repeat this for the other three tables: load them one by one into Power Query.
+	2.	Rename Queries (Optional but Recommended):
+	•	In the Power Query Editor’s left pane, rename your queries to meaningful names (e.g., “InternalData”, “CustData1”, “CustData2”, “CustData3”).
+
+⸻
+
+Step 3: (Optional) Clean and Transform Individual Tables
+	1.	Data Cleaning Steps (Common Tasks):
+	•	Use Transform > Trim and Transform > Clean for text fields.
+	•	Change data types by right-clicking the column header and selecting Change Type (e.g., Date for delivery date columns, Number for quantity columns).
+	•	Create computed columns if needed (such as a Composite Key) by using Add Column > Custom Column. For example, if you need to join on multiple fields:
+
+[OrderID] & "-" & [LineNumber] & "-" & [ProductCode]
+
+
+	2.	Apply and Close:
+	•	Once the cleaning steps for each table are completed, click Close & Load To… and choose Only Create Connection if you prefer merging them later from one main query (or load them into the workbook if you want to inspect the intermediate data).
+
+⸻
+
+Step 4: Merge the Tables
+	1.	Start with Your Main Table:
+	•	In Power Query, open your “InternalData” query.
+	•	In the Power Query Editor, go to Home > Merge Queries (or Merge Queries as New to create a new combined query, which keeps your original tables intact).
+	2.	Merge the First Additional Table:
+	•	In the Merge dialog:
+	•	Choose “InternalData” as the first (primary) table.
+	•	Select one of the additional tables (say “CustData1”) as the second table.
+	•	Click on the matching column(s) in both tables (for example, use the Composite Key or any unique identifier that exists in both tables).
+	•	Choose the join type—commonly an Inner Join (to match only records present in both) or Left Outer Join (to keep every internal record even if no match is found).
+	•	Click OK.
+	•	In the resulting merged query, an extra column (often with the name of the joined table, e.g., “CustData1”) appears.
+	3.	Expand Merged Columns:
+	•	Click the expand icon (two arrows) on the new column header.
+	•	Select the columns from CustData1 that you need (for example, recorded delivery date, received quantities, etc.).
+	•	Uncheck “Use original column name as prefix” if you want to avoid long names.
+	•	Click OK.
+	4.	Repeat the Merge for the Other Two Tables:
+	•	With your merged “InternalData” (now including data from CustData1), merge the next table:
+	•	Go to Home > Merge Queries.
+	•	Choose the updated “InternalData” and then select “CustData2”.
+	•	Match on the same key (or additional keys if necessary) and choose the join type.
+	•	Expand the columns you need.
+	•	Repeat these steps for “CustData3”.
+	5.	Review and Adjust:
+	•	Once all joins are complete, verify that the resulting table includes all the required fields.
+	•	If needed, create new calculated columns (using the Add Column > Custom Column option) to compute date differences or quantity differences between the fields from your internal and external data.
+
+⸻
+
+Step 5: Load the Combined Data for Reporting
+	1.	Close & Load:
+	•	In Power Query, click Home > Close & Load To…
+	•	Choose to load the resulting table into a new worksheet. This table will be your unified dataset for OTIF analysis.
+	2.	Set Up Refresh:
+	•	Because your data is from Excel Tables and stored as connections, clicking Data > Refresh All will update your merged data whenever the underlying tables change.
+	•	If you add new data to one of the original tables, you simply refresh the connection and your combined table updates automatically.
+
+⸻
+
+Step 6: Build Your OTIF Analysis Dashboard
+	1.	Pivot Tables and Charts:
+	•	Once your combined table is loaded back into Excel, create a Pivot Table by selecting Insert > PivotTable from this unified dataset.
+	•	Use fields such as Plant, Customer, and your calculated difference columns (for dates and quantities) to analyze where discrepancies lie.
+	•	You can add slicers or filters for interactivity.
+	2.	Document Your Process:
+	•	It’s a good idea to write down the steps (perhaps in a separate “Documentation” sheet) so others can understand the process or update it if needed in the future.
+
+⸻
+
+Summary
+	•	Data Preparation: Convert all datasets to Excel Tables and perform necessary cleaning/formatting.
+	•	Load to Power Query: Import each table into Power Query as connections.
+	•	Merge Queries: Start with your main internal data table and merge it with each of the 3 additional tables one by one using matching keys (composite if needed).
+	•	Expand and Transform: Expand the necessary columns from each merged table and create any additional calculated columns for differences.
+	•	Load and Report: Close & load the unified data set into a new sheet for analysis, and then build pivot tables and charts for your OTIF reporting dashboard.
+
+This process keeps everything automated and scalable—every time new data is added to your source Excel Tables, a quick refresh will update your analysis without additional manual intervention.
