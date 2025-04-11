@@ -1,0 +1,138 @@
+============================================================
+OTIF Analysis in Power BI: Step-by-Step Guide
+============================================================
+
+Step 1: Import Your Data into Power BI
+----------------------------------------
+1. Launch Power BI Desktop.
+2. Connect to Your Data Sources:
+   - Go to Home > Get Data > Excel (or choose the appropriate source) and select your file(s) that contain your internal data and the three customer delivery tables.
+   - In the Navigator window, select the relevant sheets or Excel tables (e.g., “InternalData”, “CustomerData1”, “CustomerData2”, “CustomerData3”) and click Load (or Transform Data if you plan on doing initial cleaning before loading).
+
+
+Step 2: Clean and Prepare Your Data Using Power Query
+------------------------------------------------------
+1. Open Power Query Editor:
+   - After loading your tables, click on Transform Data to open the Power Query Editor.
+
+2. Standardize Each Table:
+   - Change Data Types:
+     * For each table, select columns such as delivery dates and quantities and set the correct data types (e.g., convert “Requested Delivery Date” and “Actual Delivery Date” to Date type).
+   - Trim and Clean Text Fields:
+     * For key text fields (like Order ID, Plant, and Customer), use Transform > Format > Trim to remove extra spaces.
+   - Create Composite Keys (If Needed):
+     * If you need to join on multiple fields, add a composite key column:
+       - Go to Add Column > Custom Column and enter a formula such as:
+             [OrderID] & "-" & [LineNumber] & "-" & [ProductCode]
+       - Name this new column “CompositeKey” (or a similar descriptive name) so you have a unique identifier for matching records.
+
+
+Step 3: Merge Your Tables
+-------------------------
+1. Start with Your Main Internal Data Table:
+   - Select your “InternalData” query in the Query pane, which will be your primary table.
+
+2. Merge Customer Tables:
+   - Merge the First Customer Table:
+     * With “InternalData” selected, go to Home > Merge Queries > Merge Queries as New (this creates a new combined query without altering your original tables).
+     * In the Merge dialog, choose “InternalData” as the first table and select “CustomerData1” as the second.
+     * Select the matching key column(s) (for example, the “CompositeKey” if you created one or another unique identifier common to both tables).
+     * Choose your join type — commonly a Left Outer Join so that you keep every record from InternalData while pulling in matching records from CustomerData1.
+     * Click OK.
+   - Expand the Merged Columns:
+     * In the resulting merged query, click the expand icon (two arrows) in the header of the new column.
+     * Select the fields you require from CustomerData1 (e.g., recorded delivery dates, received quantities, etc.) and, if desired, uncheck “Use original column name as prefix.”
+   - Repeat for CustomerData2 and CustomerData3:
+     * With your merged InternalData now including data from CustomerData1, repeat the merge process for CustomerData2 and then for CustomerData3, matching on the key columns.
+   - Optional – Create Calculated Columns:
+     * After all merges, add custom columns to calculate:
+       - Date Differences: e.g., add a custom column with a formula like:
+             Duration.Days([Customer_RecordedDeliveryDate] - [Requested Delivery Date])
+         (Adjust the field names to match your data.)
+       - Quantity Differences: similarly, subtract delivered quantities from received quantities.
+
+3. Finalize the Query:
+   - Verify that your combined table contains all the required fields.
+   - Click Close & Apply to load the merged data into the Power BI data model.
+
+
+Step 4: Create Relationships (If Needed)
+------------------------------------------
+1. Switch to the Data Model View:
+   - After applying your transformations, switch to the Model view in Power BI Desktop.
+2. Establish Relationships:
+   - If you have additional tables (such as lookup tables for Plants or Customers), create relationships by dragging and dropping the related fields.
+   - This is optional if your merged table contains all necessary data for analysis, but it helps to build a more flexible data model.
+
+
+Step 5: Build DAX Measures for Analysis
+-----------------------------------------
+Create DAX measures to summarize your key metrics across plants and customers. For example:
+
+1. Average Date Difference:
+   This measure calculates the average number of days between the requested and the customer-recorded delivery dates.
+   DAX Code:
+       Avg Date Difference =
+       AVERAGEX(
+           'MergedDeliveryData',
+           DATEDIFF(
+               'MergedDeliveryData'[Requested Delivery Date],
+               'MergedDeliveryData'[Customer_RecordedDeliveryDate],
+               DAY
+           )
+       )
+
+2. Average Quantity Difference:
+   This measure computes the average variance between delivered and received quantities.
+   DAX Code:
+       Avg Quantity Difference =
+       AVERAGEX(
+           'MergedDeliveryData',
+           'MergedDeliveryData'[Received Quantity] - 'MergedDeliveryData'[Delivered Quantity]
+       )
+
+3. Delivery Count:
+   A simple measure to count the number of delivery records.
+   DAX Code:
+       Delivery Count = COUNTROWS('MergedDeliveryData')
+
+(Note: Replace 'MergedDeliveryData' and field names with your actual table and column names in the model.)
+
+
+Step 6: Build Your OTIF Analysis Dashboard
+-------------------------------------------
+1. Set Up the Report Canvas:
+   - In the Report view, design your layout by adding interactive visuals.
+2. Create Visualizations:
+   - Matrix or Table Visuals:
+     * For example, use a Matrix visual with Plants as rows and Customers as columns to display your calculated measures.
+   - Charts:
+     * Build bar or line charts to visualize trends over time (e.g., tracking average date differences by Plant or Customer).
+   - Slicers:
+     * Add slicers for fields like Plant, Customer, or time periods to enable interactive filtering.
+   - Conditional Formatting:
+     * Apply formatting to highlight where differences (in dates or quantities) exceed acceptable thresholds.
+3. Interactive Analysis:
+   - Configure cross-filtering among visuals so that selecting a specific plant or customer drills down into more detailed information.
+
+
+Step 7: Automation and Refresh
+-------------------------------
+1. Scheduled Refresh:
+   - When you publish your report to the Power BI Service, set up scheduled refreshes so that any new data added to your source files is automatically processed and updated in your report.
+2. Maintain Documentation:
+   - Document your Power Query steps and DAX measures (either in a dedicated documentation page within the report or in a separate file) so that team members understand your process and can modify it in the future.
+
+============================================================
+Summary
+============================================================
+- Data Import: Load your internal and customer delivery tables using Power BI’s Get Data functionality.
+- Data Transformation: Use Power Query to clean, format, and standardize your data (including creating composite keys, if needed).
+- Data Merging: Merge your internal data with the three customer tables using matching key fields.
+- Data Modeling: Create relationships (if needed) and write DAX measures to automatically calculate key metrics like date and quantity differences.
+- Reporting: Build interactive visuals (matrix tables, charts, slicers) to analyze and report OTIF performance by Plant and Customer.
+- Automation: Use Power BI’s scheduled refresh capabilities to ensure your dashboard stays up to date automatically as new data becomes available.
+
+============================================================
+End of Guide
+============================================================
