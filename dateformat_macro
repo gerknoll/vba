@@ -28,3 +28,4 @@ Sub FormatDateColumnsInAllTables()
         Next tbl
     Next ws
 End Sub
+MarsKey = UPPER(TRIM([PO No])) & "-" & UPPER(TRIM([Item No]))
