@@ -1,0 +1,132 @@
+Great! Here’s a step-by-step Power Query implementation plan with a sample M code pattern to resolve cases where multiple matches occur, using a weighted scoring approach:
+
+⸻
+
+Step-by-Step Plan: Resolving Multiple Matches
+
+1. Prepare Composite Key for Merging
+
+In both InternalLines and CustomerLines queries, add a key for high-granularity matching:
+
+= Table.AddColumn(Source, "CompositeKey", each [PO] & "_" & [Plant] & "_" & [Material])
+
+2. Merge Internal and Customer Tables
+
+Perform a left join on CompositeKey and expand customer fields (e.g., RequestedDate, OrderedQty).
+
+= Table.NestedJoin(InternalLines, "CompositeKey", CustomerLines, "CompositeKey", "MergedCustomer", JoinKind.LeftOuter)
+= Table.ExpandTableColumn(MergedTable, "MergedCustomer", {"RequestedDate", "OrderedQty", "DeliveredDate", "DeliveredQty"})
+
+
+
+⸻
+
+3. Create Scoring Columns for Each Candidate
+
+Add calculated columns:
+
+a) Delivery Date Proximity Score
+
+= Table.AddColumn(MergedTable, "Score_DeliveryDate", each Number.Abs(Duration.Days([DeliveredDate] - [RequestedDate])))
+
+Lower is better.
+
+b) Quantity Match Score
+
+= Table.AddColumn(PreviousStep, "Score_QtyDiff", each Number.Abs([DeliveredQty] - [OrderedQty]))
+
+
+
+⸻
+
+4. Create Weighted Matching Score
+
+You can normalize and invert these scores to create a weighted score:
+
+= Table.AddColumn(PreviousStep, "MatchingScore", each 
+    (1 / (1 + [Score_DeliveryDate])) * 0.6 +
+    (1 / (1 + [Score_QtyDiff])) * 0.4
+)
+
+	•	1 / (1 + score) inverts the value: smaller deltas = higher score.
+	•	You can tweak the weights (0.6 and 0.4) as needed.
+
+⸻
+
+5. Group and Select Top Match
+
+Group by original internal record ID (e.g., InternalRowID), then keep the row with the maximum MatchingScore:
+
+Grouped = Table.Group(ScoredTable, {"InternalRowID"}, {
+    {"TopMatch", each Table.FirstN(Table.Sort(_, {"MatchingScore", Order.Descending}), 1), type table}
+})
+
+Then expand the grouped result:
+
+= Table.ExpandTableColumn(Grouped, "TopMatch", {...your desired fields...})
+
+
+
+⸻
+
+6. Flag Ambiguous Matches
+
+Before grouping, if a row has multiple matches with the same score, you can add a flag:
+
+= Table.AddColumn(PreviousStep, "IsAmbiguous", each 
+    if List.Count(List.Distinct(Table.SelectRows(PreviousStep, (r) => r[InternalRowID] = [InternalRowID])[MatchingScore])) > 1 then "Yes" else "No")
+
+
+
+⸻
+
+let
+    // 1. Load Internal and Customer tables
+    Internal = YourInternalTable,  // Replace with actual query name
+    Customer = YourCustomerTable,  // Replace with actual query name
+
+    // 2. Create Composite Key in both tables
+    InternalWithKey = Table.AddColumn(Internal, "CompositeKey", each [PO] & "_" & [Plant] & "_" & [Material]),
+    CustomerWithKey = Table.AddColumn(Customer, "CompositeKey", each [PO] & "_" & [Plant] & "_" & [Material]),
+
+    // 3. Merge tables on Composite Key
+    Merged = Table.NestedJoin(InternalWithKey, "CompositeKey", CustomerWithKey, "CompositeKey", "CustomerMatch", JoinKind.LeftOuter),
+    Expanded = Table.ExpandTableColumn(Merged, "CustomerMatch", {
+        "RequestedDate", "OrderedQty", "CustomerPO", "CustomerPlant", "CustomerMaterial"
+    }),
+
+    // 4. Add scoring columns
+    ScoreDate = Table.AddColumn(Expanded, "Score_DeliveryDate", each try Number.Abs(Duration.Days([DeliveredDate] - [RequestedDate])) otherwise null),
+    ScoreQty = Table.AddColumn(ScoreDate, "Score_QtyDiff", each try Number.Abs([DeliveredQty] - [OrderedQty]) otherwise null),
+
+    // 5. Calculate weighted matching score (0.6 for date, 0.4 for qty)
+    Scored = Table.AddColumn(ScoreQty, "MatchingScore", each 
+        try 
+            (1 / (1 + [Score_DeliveryDate])) * 0.6 + 
+            (1 / (1 + [Score_QtyDiff])) * 0.4
+        otherwise null
+    ),
+
+    // 6. Group by Internal Line ID and keep the best match
+    Grouped = Table.Group(Scored, {"InternalLineID"}, {
+        {"TopMatch", each Table.FirstN(Table.Sort(_, {"MatchingScore", Order.Descending}), 1), type table}
+    }),
+
+    // 7. Expand the best match fields
+    Final = Table.ExpandTableColumn(Grouped, "TopMatch", {
+        "PO", "Plant", "Material", "RequestedDate", "DeliveredDate", "DeliveredQty", "OrderedQty", 
+        "Score_DeliveryDate", "Score_QtyDiff", "MatchingScore"
+    })
+in
+    Final
+
+⸻
+
+What to Change
+
+Replace the placeholders:
+	•	YourInternalTable – name of your internal shipment query
+	•	YourCustomerTable – name of your unified customer data query
+	•	InternalLineID – a unique ID per internal line, e.g., PO+Line or Row Number
+	•	Add/remove fields in the ExpandTableColumn step as needed.
+
