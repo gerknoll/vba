@@ -1,3 +1,44 @@
+If, after applying your 3-level matching hierarchy (1. PO + Plant, 2. PO + Material, 3. fallback logic like Material + Plant), there are still multiple matches, you should implement tie-breaker logic or mark the record as ambiguous for review. Here are a few options:
+
+⸻
+
+1. Prioritize based on Delivery Date proximity
+
+Choose the internal line with the delivery date closest to the customer’s recorded date. You can add a column like:
+
+DeliveryDateDiff = ABS(Days Between Internal Delivery Date and Customer Date)
+
+Then keep only the match with the minimum date difference.
+
+⸻
+
+2. Use Quantity Matching Accuracy
+
+If multiple records remain after date filtering, compare quantity differences and retain the one with the smallest delta between ordered and delivered quantities.
+
+⸻
+
+3. Flag for Manual Review
+
+If none of the above rules yield a unique match, set a column like:
+
+Match_Status = "Multiple Candidates - Review"
+
+And surface these in a drill-through table in Power BI.
+
+⸻
+
+4. Implement Weighted Matching Score
+
+Calculate a composite score that weights:
+	•	Delivery date closeness (e.g., weight 0.5)
+	•	Quantity match closeness (e.g., weight 0.3)
+	•	PO item number match (if available, weight 0.2)
+
+Keep the row with the highest score.
+
+⸻
+
 Great! Here’s a step-by-step Power Query implementation plan with a sample M code pattern to resolve cases where multiple matches occur, using a weighted scoring approach:
 
 ⸻
