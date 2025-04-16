@@ -171,3 +171,252 @@ Replace the placeholders:
 	•	InternalLineID – a unique ID per internal line, e.g., PO+Line or Row Number
 	•	Add/remove fields in the ExpandTableColumn step as needed.
 
+AAAAAAAAAAAA
+
+
+Great — here’s the first matching plan specifically for Mars and Nestlé, which avoids Plant and PO Line Number, and instead uses PO Number, Line Count Matching, and a Weighted Quantity Similarity.
+
+⸻
+
+Matching Plan 1: Mars and Nestlé
+
+1. Base Matching Key
+	•	Join on PO Number only.
+
+2. Enrich with Line Counts
+	•	For each PO in both tables:
+	•	Add a column PO_LineCount_Internal (count of how many times each PO appears in internal table).
+	•	Add a column PO_LineCount_Customer (same, from customer table).
+	•	After joining, compute a column like:
+
+LineCountMatchScore = if [PO_LineCount_Internal] = [PO_LineCount_Customer] then 1 else 0
+
+
+	•	Or make it fuzzy with:
+
+LineCountSimilarity = 1 - Number.Abs([PO_LineCount_Internal] - [PO_LineCount_Customer]) / Number.Max([PO_LineCount_Internal], [PO_LineCount_Customer])
+
+
+
+3. Quantity Similarity Scoring
+	•	After merging internal and customer rows with the same PO:
+	•	Add this scoring column:
+
+QuantitySimilarity = 1 - Number.Abs([DeliveredQty_Internal] - [OrderedQty_Customer]) / Number.Max([DeliveredQty_Internal], [OrderedQty_Customer])
+
+This returns a value between 0 and 1: higher means closer match.
+
+4. Total Matching Score
+	•	Combine scores into a weighted match:
+
+MatchingScore = 
+    0.6 * QuantitySimilarity +
+    0.4 * LineCountSimilarity
+
+(Adjust weights as needed.)
+
+	•	For each internal line, keep the customer row with the highest MatchingScore.
+
+⸻
+
+Data Flow Summary
+
+Step	Action
+1	Add PO_LineCount columns to both tables via grouping.
+2	Merge internal and customer on PO number (many-to-many).
+3	Add quantity similarity & line count match columns.
+4	Compute a total score.
+5	Keep best scoring row per internal line.
+
+
+
+⸻
+
+Next Steps
+
+Would you like me to now:
+	•	Draft a second matching plan for Unilever and Mondelez, or
+	•	Generate the actual Power Query (M) code for this Mars/Nestlé plan?
+
+Let me know your preference!
+
+
+let
+    // Load tables
+    Internal = InternalData,  // Replace with your actual internal table name
+    Customer = MarsNestleCustomer,  // Replace with unified Mars & Nestlé customer data
+
+    // Step 1: Add PO line count to each table
+    InternalWithCounts = Table.AddColumn(
+        Internal,
+        "PO_LineCount_Internal",
+        each Table.RowCount(Table.SelectRows(Internal, (r) => r[PO] = [PO]))
+    ),
+
+    CustomerWithCounts = Table.AddColumn(
+        Customer,
+        "PO_LineCount_Customer",
+        each Table.RowCount(Table.SelectRows(Customer, (r) => r[PO] = [PO]))
+    ),
+
+    // Step 2: Merge on PO only
+    Merged = Table.NestedJoin(
+        InternalWithCounts,
+        "PO",
+        CustomerWithCounts,
+        "PO",
+        "CustomerMatch",
+        JoinKind.LeftOuter
+    ),
+    Expanded = Table.ExpandTableColumn(
+        Merged,
+        "CustomerMatch",
+        {"PO", "Material", "OrderedQty", "DeliveredQty_Customer", "RequestedDate", "PO_LineCount_Customer"},
+        {"PO_Cust", "Material_Cust", "OrderedQty", "DeliveredQty_Customer", "RequestedDate", "PO_LineCount_Customer"}
+    ),
+
+    // Step 3: Add Quantity Similarity Score
+    WithQtySimilarity = Table.AddColumn(
+        Expanded,
+        "QuantitySimilarity",
+        each try 1 - Number.Abs([DeliveredQty_Internal] - [OrderedQty]) / Number.Max([DeliveredQty_Internal], [OrderedQty]) otherwise null
+    ),
+
+    // Step 4: Add Line Count Similarity Score
+    WithLineCountSimilarity = Table.AddColumn(
+        WithQtySimilarity,
+        "LineCountSimilarity",
+        each try 
+            1 - Number.Abs([PO_LineCount_Internal] - [PO_LineCount_Customer]) / Number.Max([PO_LineCount_Internal], [PO_LineCount_Customer]) 
+        otherwise null
+    ),
+
+    // Step 5: Composite Match Score
+    Scored = Table.AddColumn(
+        WithLineCountSimilarity,
+        "MatchingScore",
+        each try [QuantitySimilarity] * 0.6 + [LineCountSimilarity] * 0.4 otherwise null
+    ),
+
+    // Step 6: Group and select top-scoring match per Internal Line ID (assumes you have a unique key like Row ID)
+    Grouped = Table.Group(
+        Scored,
+        {"InternalRowID"},  // Replace with your unique internal row ID column
+        {
+            {"BestMatch", each Table.FirstN(Table.Sort(_, {"MatchingScore", Order.Descending}), 1), type table}
+        }
+    ),
+
+    Final = Table.ExpandTableColumn(Grouped, "BestMatch", {
+        "PO", "Material", "DeliveredQty_Internal", "OrderedQty", "QuantitySimilarity", 
+        "LineCountSimilarity", "MatchingScore", "RequestedDate", "PO_LineCount_Internal", "PO_LineCount_Customer"
+    })
+in
+    Final
+
+
+Placeholder
+Replace With
+InternalData
+Actual query name for internal lines
+MarsNestleCustomer
+Merged table of Mars + Nestlé lines
+DeliveredQty_Internal
+Delivered quantity column in internal table
+InternalRowID
+A unique row identifier for internal lines (e.g. PO + Material or row index)
+
+
+BBBBBBBBBB
+
+// Function: Match internal and customer lines by PO number, line count, and quantity similarity
+let
+    fnMatchByPOQuantityScore = (internalTable as table, customerTable as table, optional internalRowIDCol as text) as table =>
+    let
+        // Validate optional row ID column
+        InternalWithID = if internalRowIDCol <> null then
+            Table.AddColumn(internalTable, "InternalRowID", each Record.Field(_, internalRowIDCol))
+        else
+            Table.AddIndexColumn(internalTable, "InternalRowID", 1, 1, Int64.Type),
+
+        // Step 1: Add PO line count to each table
+        InternalWithCounts = Table.AddColumn(
+            InternalWithID,
+            "PO_LineCount_Internal",
+            each Table.RowCount(Table.SelectRows(InternalWithID, (r) => r[PO] = [PO]))
+        ),
+
+        CustomerWithCounts = Table.AddColumn(
+            customerTable,
+            "PO_LineCount_Customer",
+            each Table.RowCount(Table.SelectRows(customerTable, (r) => r[PO] = [PO]))
+        ),
+
+        // Step 2: Merge on PO only
+        Merged = Table.NestedJoin(
+            InternalWithCounts,
+            "PO",
+            CustomerWithCounts,
+            "PO",
+            "CustomerMatch",
+            JoinKind.LeftOuter
+        ),
+        Expanded = Table.ExpandTableColumn(
+            Merged,
+            "CustomerMatch",
+            {"PO", "Material", "OrderedQty", "DeliveredQty", "RequestedDate", "PO_LineCount_Customer"},
+            {"PO_Cust", "Material_Cust", "OrderedQty", "DeliveredQty_Customer", "RequestedDate", "PO_LineCount_Customer"}
+        ),
+
+        // Step 3: Add Quantity Similarity Score
+        WithQtySimilarity = Table.AddColumn(
+            Expanded,
+            "QuantitySimilarity",
+            each try 1 - Number.Abs([DeliveredQty] - [OrderedQty]) / Number.Max([DeliveredQty], [OrderedQty]) otherwise null
+        ),
+
+        // Step 4: Add Line Count Similarity Score
+        WithLineCountSimilarity = Table.AddColumn(
+            WithQtySimilarity,
+            "LineCountSimilarity",
+            each try 
+                1 - Number.Abs([PO_LineCount_Internal] - [PO_LineCount_Customer]) / Number.Max([PO_LineCount_Internal], [PO_LineCount_Customer]) 
+            otherwise null
+        ),
+
+        // Step 5: Composite Matching Score
+        Scored = Table.AddColumn(
+            WithLineCountSimilarity,
+            "MatchingScore",
+            each try [QuantitySimilarity] * 0.6 + [LineCountSimilarity] * 0.4 otherwise null
+        ),
+
+        // Step 6: Group and keep top match per Internal Line
+        Grouped = Table.Group(
+            Scored,
+            {"InternalRowID"},
+            {
+                {"BestMatch", each Table.FirstN(Table.Sort(_, {"MatchingScore", Order.Descending}), 1), type table}
+            }
+        ),
+
+        Final = Table.ExpandTableColumn(Grouped, "BestMatch", {
+            "PO", "Material", "DeliveredQty", "OrderedQty", "QuantitySimilarity", 
+            "LineCountSimilarity", "MatchingScore", "RequestedDate", "PO_LineCount_Internal", "PO_LineCount_Customer"
+        })
+    in
+        Final
+in
+    fnMatchByPOQuantityScore
+
+
+
+
+
+TO CALL IT
+
+
+let
+    MatchedTable = fnMatchByPOQuantityScore(InternalData, MarsNestleCustomer, "RowID")  // Replace names & ID column
+in
+    MatchedTable
