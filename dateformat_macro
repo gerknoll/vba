@@ -29,3 +29,8 @@ Sub FormatDateColumnsInAllTables()
     Next ws
 End Sub
 MarsKey = UPPER(TRIM([PO No])) & "-" & UPPER(TRIM([Item No]))
+
+
+
+
+PO_Bridge = DISTINCT(UNION(SELECTCOLUMNS(InternalLines, "PO", [PO]), SELECTCOLUMNS(CustomerLines, "PO", [PO])))
