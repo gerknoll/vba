@@ -51,3 +51,34 @@ LineCounts = Table.Group(Source, {"PO"}, {{"LineCount", each Table.RowCount(_), 
 
 DeliveredQty_Internal = SUM(InternalLines[DeliveredQty])
 OrderedQty_Customer = SUM(CustomerLines[OrderedQty])
+
+
+TotalDelivered_Internal :=
+CALCULATE(
+    SUM(InternalLines[DeliveredQty]),
+    CROSSFILTER(PO_Bridge[PO], InternalLines[PO], BOTH)
+)
+
+TotalDelivered_Customer :=
+CALCULATE(
+    SUM(CustomerLines[DeliveredQty]),
+    CROSSFILTER(PO_Bridge[PO], CustomerLines[PO], BOTH)
+)
+
+DeliveredQty_Difference :=
+ABS(
+    [TotalDelivered_Internal] - [TotalDelivered_Customer]
+)
+
+DeliveredQty_Similarity :=
+VAR Internal = [TotalDelivered_Internal]
+VAR Customer = [TotalDelivered_Customer]
+RETURN
+IF(
+    Internal > 0 && Customer > 0,
+    1 - DIVIDE(ABS(Internal - Customer), MAX(Internal, Customer)),
+    BLANK()
+)
+
+
+
