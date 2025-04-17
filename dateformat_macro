@@ -47,3 +47,7 @@ FILTER(
 
 
 LineCounts = Table.Group(Source, {"PO"}, {{"LineCount", each Table.RowCount(_), Int64.Type}})
+
+
+DeliveredQty_Internal = SUM(InternalLines[DeliveredQty])
+OrderedQty_Customer = SUM(CustomerLines[OrderedQty])
