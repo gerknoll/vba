@@ -42,3 +42,8 @@ FILTER(
     ),
     NOT ISBLANK([PO]) && TRIM([PO]) <> ""
 )
+
+
+
+
+LineCounts = Table.Group(Source, {"PO"}, {{"LineCount", each Table.RowCount(_), Int64.Type}})
