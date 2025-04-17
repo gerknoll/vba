@@ -32,5 +32,13 @@ MarsKey = UPPER(TRIM([PO No])) & "-" & UPPER(TRIM([Item No]))
 
 
 
-
-PO_Bridge = DISTINCT(UNION(SELECTCOLUMNS(InternalLines, "PO", [PO]), SELECTCOLUMNS(CustomerLines, "PO", [PO])))
+PO_Bridge =
+FILTER(
+    DISTINCT(
+        UNION(
+            SELECTCOLUMNS(InternalLines, "PO", InternalLines[PO]),
+            SELECTCOLUMNS(CustomerLines, "PO", CustomerLines[PO])
+        )
+    ),
+    NOT ISBLANK([PO]) && TRIM([PO]) <> ""
+)
