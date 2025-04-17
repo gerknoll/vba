@@ -81,4 +81,25 @@ IF(
 )
 
 
+TotalDelivered_Internal :=
+CALCULATE(
+    SUM(InternalLines[DeliveredQty]),
+    ALLEXCEPT(InternalLines, InternalLines[PO])
+)
+
+TotalDelivered_Customer :=
+CALCULATE(
+    SUM(CustomerLines[DeliveredQty]),
+    ALLEXCEPT(CustomerLines, CustomerLines[PO])
+)
+
+DeliveredQty_Diff_PO :=
+ABS(
+    [TotalDelivered_Internal] - [TotalDelivered_Customer]
+)
+
+
+
+
+
 
